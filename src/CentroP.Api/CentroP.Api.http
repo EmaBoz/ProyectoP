@@ -1,0 +1,6 @@
+@CentroP.Api_HostAddress = http://localhost:5234
+
+GET {{CentroP.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

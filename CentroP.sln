@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{3FD89E32-AD0B-491A-93F7-0866EBDEA9CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CentroP.Api", "src\CentroP.Api\CentroP.Api.csproj", "{A9826066-E8E8-4DF4-8FA4-817B89EEE305}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A9826066-E8E8-4DF4-8FA4-817B89EEE305}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9826066-E8E8-4DF4-8FA4-817B89EEE305}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9826066-E8E8-4DF4-8FA4-817B89EEE305}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9826066-E8E8-4DF4-8FA4-817B89EEE305}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A9826066-E8E8-4DF4-8FA4-817B89EEE305} = {3FD89E32-AD0B-491A-93F7-0866EBDEA9CF}
+	EndGlobalSection
+EndGlobal

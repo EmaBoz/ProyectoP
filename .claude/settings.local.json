@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"dir \\\\\"C:\\\\Program Files\\\\dotnet\\\\sdk\\\\\"\")",
+      "Bash(dotnet --version)",
+      "PowerShell(dotnet --version)",
+      "PowerShell(Get-Command dotnet -ErrorAction SilentlyContinue)",
+      "PowerShell($env:PATH)",
+      "Bash(dir /s)",
+      "PowerShell(Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"cd 'C:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\\\\src\\\\CentroP.Api'; dotnet run\" -Verb RunAs)"
+    ]
+  }
+}
