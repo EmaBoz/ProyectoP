@@ -4,7 +4,9 @@ using CentroP.Api.Common.Interfaces;
 using CentroP.Api.Features.Clientes;
 using CentroP.Api.Features.Laboratorios;
 using CentroP.Api.Features.Provincias;
+using CentroP.Api.Features.Stock;
 using CentroP.Api.Features.Sucursales;
+using FluentValidation;
 using CentroP.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
@@ -51,6 +53,9 @@ try
         cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
         cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
     });
+
+    // ── Validadores FluentValidation ─────────────────────────────────────────
+    builder.Services.AddScoped<IValidator<GetMovimientosStockQuery>, GetMovimientosStockValidator>();
 
     // ── IDbConnectionFactory ─────────────────────────────────────────────────
     builder.Services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
@@ -145,6 +150,7 @@ try
     app.MapProvinciasEndpoints();
     app.MapLaboratoriosEndpoints();
     app.MapClientesEndpoints();
+    app.MapStockEndpoints();
 
     app.Run();
 }

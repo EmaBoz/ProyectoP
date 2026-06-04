@@ -7,7 +7,12 @@
       "PowerShell(Get-Command dotnet -ErrorAction SilentlyContinue)",
       "PowerShell($env:PATH)",
       "Bash(dir /s)",
-      "PowerShell(Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"cd 'C:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\\\\src\\\\CentroP.Api'; dotnet run\" -Verb RunAs)"
+      "PowerShell(Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"cd 'C:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\\\\src\\\\CentroP.Api'; dotnet run\" -Verb RunAs)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "PowerShell(cd \"c:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\"; dotnet build src/CentroP.Api/CentroP.Api.csproj --no-restore 2>&1 | Where-Object { $_ -match \"CS\\\\d{4}\" } | Select-Object -First 10)",
+      "PowerShell(cd \"c:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\"; $output = dotnet build src/CentroP.Api/CentroP.Api.csproj --no-restore 2>&1; $output | Where-Object { $_ -match \"error\" } | Select-Object -Last 5)"
     ]
   }
 }
