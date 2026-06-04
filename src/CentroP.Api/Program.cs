@@ -4,6 +4,7 @@ using CentroP.Api.Common.Interfaces;
 using CentroP.Api.Features.Clientes;
 using CentroP.Api.Features.Laboratorios;
 using CentroP.Api.Features.Provincias;
+using CentroP.Api.Features.Scanner;
 using CentroP.Api.Features.Stock;
 using CentroP.Api.Features.Sucursales;
 using FluentValidation;
@@ -56,6 +57,7 @@ try
 
     // ── Validadores FluentValidation ─────────────────────────────────────────
     builder.Services.AddScoped<IValidator<GetMovimientosStockQuery>, GetMovimientosStockValidator>();
+    builder.Services.AddScoped<IValidator<EscanearProductoQuery>, EscanearProductoValidator>();
 
     // ── IDbConnectionFactory ─────────────────────────────────────────────────
     builder.Services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
@@ -151,6 +153,7 @@ try
     app.MapLaboratoriosEndpoints();
     app.MapClientesEndpoints();
     app.MapStockEndpoints();
+    app.MapScannerEndpoints();
 
     app.Run();
 }
