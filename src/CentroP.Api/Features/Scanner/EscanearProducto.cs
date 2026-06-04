@@ -26,11 +26,10 @@ public sealed record ResultadoEscanerDto(
     IReadOnlyList<PrecioListaDto> Precios);
 
 public sealed record PrecioListaDto(
-    int IdListaPrecio,
     string NombreListaPrecio,
     decimal Precio,
-    decimal? VentaSugerido,
-    decimal? CostoInformado);
+    string NombreMoneda,
+    int Prioridad);
 
 public sealed class EscanearProductoValidator : AbstractValidator<EscanearProductoQuery>
 {
@@ -54,7 +53,7 @@ public sealed class EscanearProductoHandler(IDbConnectionFactory dbFactory)
     {
         using var connection = await dbFactory.CreateAsync(cancellationToken);
 
-        const string sql = """
+        const string sqlProducto = """
             SELECT TOP 1
                 p.Id                AS IdProducto,
                 p.Codigo,
@@ -76,30 +75,27 @@ public sealed class EscanearProductoHandler(IDbConnectionFactory dbFactory)
                 AND s.IdSucursal  = @IdSucursal
             LEFT  JOIN pro_DetalleMedicamento dm ON dm.IdProducto = p.Id
             WHERE cb.CodigoBarra = @CodigoBarra;
-
-            SELECT
-                pr.IdListaPrecio,
-                lp.Nombre           AS NombreListaPrecio,
-                pr.Precio,
-                pr.VentaSugerido,
-                pr.CostoInformado
-            FROM pro_CodigosBarra cb
-            INNER JOIN pro_Producto p   ON p.Id  = cb.IdProducto
-            INNER JOIN pre_Precio pr    ON pr.IdProducto = p.Id AND pr.FechaBaja IS NULL
-            INNER JOIN pre_ListaPrecio lp ON lp.Id = pr.IdListaPrecio AND lp.Habilitada = 1
-            WHERE cb.CodigoBarra = @CodigoBarra
-            ORDER BY lp.Sistema DESC, lp.Prioridad ASC;
             """;
 
-        using var multi = await connection.QueryMultipleAsync(
-            sql, new { request.IdSucursal, request.CodigoBarra });
-
-        var producto = await multi.ReadFirstOrDefaultAsync<ProductoEscanerRow>();
+        var producto = await connection.QueryFirstOrDefaultAsync<ProductoEscanerRow>(
+            sqlProducto, new { request.IdSucursal, request.CodigoBarra });
 
         if (producto is null)
             throw new NotFoundException("CodigoBarra", request.CodigoBarra);
 
-        var precios = (await multi.ReadAsync<PrecioListaDto>()).ToList();
+        const string sqlPrecios = """
+            SELECT
+                NombreListaPrecio,
+                VentaSugerido       AS Precio,
+                NombreMoneda,
+                Prioridad
+            FROM dbo.vw_pre_Precio
+            WHERE IdProducto = @IdProducto
+            ORDER BY Prioridad ASC;
+            """;
+
+        var precios = (await connection.QueryAsync<PrecioListaDto>(
+            sqlPrecios, new { producto.IdProducto })).ToList();
 
         return new ResultadoEscanerDto(
             producto.IdProducto,
