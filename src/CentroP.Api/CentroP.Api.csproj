@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="8.*" />
+    <PackageReference Include="Confluent.Kafka" Version="2.*" />
     <PackageReference Include="Dapper" Version="2.*" />
     <PackageReference Include="FluentValidation" Version="11.*" />
     <PackageReference Include="MediatR" Version="12.*" />

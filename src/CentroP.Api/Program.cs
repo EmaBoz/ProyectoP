@@ -2,6 +2,7 @@ using CentroP.Api.Common.Behaviors;
 using CentroP.Api.Common.Exceptions;
 using CentroP.Api.Common.Interfaces;
 using CentroP.Api.Features.Clientes;
+using CentroP.Api.Features.Integrations.Inventory;
 using CentroP.Api.Features.Laboratorios;
 using CentroP.Api.Features.Provincias;
 using CentroP.Api.Features.Scanner;
@@ -61,6 +62,10 @@ try
 
     // ── IDbConnectionFactory ─────────────────────────────────────────────────
     builder.Services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
+
+    // ── Kafka (EDA) ───────────────────────────────────────────────────────────
+    builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+    builder.Services.AddHostedService<InventoryKafkaWorker>();
 
     // ── HybridCache ───────────────────────────────────────────────────────────
     builder.Services.AddHybridCache();
