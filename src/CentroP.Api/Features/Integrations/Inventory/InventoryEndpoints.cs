@@ -1,19 +1,7 @@
+using CentroP.Api.Common.Messaging;
 using MediatR;
 
 namespace CentroP.Api.Features.Integrations.Inventory;
-
-// ── HTTP envelopes (misma forma que el contrato Kafka) ─────────────────────────
-
-public sealed record InventoryStockHttpRequest(InventoryStockRequestData Data);
-
-public sealed record InventoryStockRequestData(
-    string OrderNumber,
-    InventoryProviderDto Provider,
-    IReadOnlyList<InventoryItemRequestDto> Items);
-
-public sealed record InventoryStockHttpResponse(InventoryAvailabilityResultDto Data);
-
-// ── Endpoint ───────────────────────────────────────────────────────────────────
 
 public static class InventoryEndpoints
 {
@@ -31,14 +19,9 @@ public static class InventoryEndpoints
     }
 
     static async Task<IResult> ConsultarStock(
-        InventoryStockHttpRequest body, IMediator mediator, CancellationToken ct)
+        RequestEnvelope<InventoryRequestPayload> body, IMediator mediator, CancellationToken ct)
     {
-        var query = new GetInventoryAvailabilityQuery(
-            body.Data.OrderNumber,
-            body.Data.Provider,
-            body.Data.Items);
-
-        var result = await mediator.Send(query, ct);
-        return Results.Ok(new InventoryStockHttpResponse(result));
+        var result = await mediator.Send(new GetInventoryAvailabilityQuery(body), ct);
+        return Results.Ok(result);
     }
 }

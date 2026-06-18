@@ -4,19 +4,18 @@ using MediatR;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
-namespace CentroP.Api.Features.Integrations.Inventory;
+namespace CentroP.Api.Features.Integrations.Orders;
 
-public sealed class KafkaSettings
+public sealed class OrderKafkaSettings
 {
     public string BootstrapServers { get; init; } = default!;
     public string GroupId { get; init; } = default!;
-    public string Cufe { get; init; } = default!;
 }
 
-public sealed class InventoryKafkaWorker(
+public sealed class OrderKafkaWorker(
     IServiceScopeFactory scopeFactory,
-    IOptions<KafkaSettings> kafkaOptions,
-    ILogger<InventoryKafkaWorker> logger)
+    IOptions<OrderKafkaSettings> kafkaOptions,
+    ILogger<OrderKafkaWorker> logger)
     : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -25,14 +24,15 @@ public sealed class InventoryKafkaWorker(
         PropertyNameCaseInsensitive = true
     };
 
-    private const string ResponseTopic = "farmatouch.inventory.v1.stock-result";
+    // Suscripción con regex: escucha cualquier CUFE
+    private const string ConsumeTopicPattern = "^pharmacy\\..+\\.999\\.order\\.v1\\.confirm-quote-request$";
+    private const string ResponseTopic = "farmatouch.order.v1.confirm-quote-result";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Yield();
 
         var settings = kafkaOptions.Value;
-        var consumeTopic = $"pharmacy.{settings.Cufe}.999.inventory.v1.stock-request";
 
         var consumerConfig = new ConsumerConfig
         {
@@ -51,9 +51,9 @@ public sealed class InventoryKafkaWorker(
         using var consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
         using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
 
-        consumer.Subscribe(consumeTopic);
+        consumer.Subscribe(ConsumeTopicPattern);
         logger.LogInformation(
-            "InventoryKafkaWorker iniciado. Escuchando en '{Topic}'", consumeTopic);
+            "OrderKafkaWorker iniciado. Escuchando patrón '{Pattern}'", ConsumeTopicPattern);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -68,7 +68,7 @@ public sealed class InventoryKafkaWorker(
                     continue;
                 }
 
-                var envelope = JsonSerializer.Deserialize<RequestEnvelope<InventoryRequestPayload>>(
+                var envelope = JsonSerializer.Deserialize<RequestEnvelope<ConfirmQuoteRequestPayload>>(
                     result.Message.Value, JsonOptions);
 
                 if (envelope?.Metadata is null || envelope.Data is null)
@@ -81,17 +81,17 @@ public sealed class InventoryKafkaWorker(
                 }
 
                 logger.LogInformation(
-                    "Mensaje recibido. EventId={EventId} TraceId={TraceId} Partition={Partition} Offset={Offset}",
+                    "Cotización recibida. EventId={EventId} TraceId={TraceId} Topic={Topic} Offset={Offset}",
                     envelope.Metadata.EventId,
                     envelope.Metadata.TraceId,
-                    result.Partition.Value,
+                    result.Topic,
                     result.Offset.Value);
 
                 using var scope = scopeFactory.CreateScope();
                 var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
                 var responseEnvelope = await sender.Send(
-                    new GetInventoryAvailabilityQuery(envelope), stoppingToken);
+                    new ConfirmQuoteQuery(envelope), stoppingToken);
 
                 await producer.ProduceAsync(
                     ResponseTopic,
@@ -105,7 +105,7 @@ public sealed class InventoryKafkaWorker(
                 consumer.Commit(result);
 
                 logger.LogInformation(
-                    "Respuesta publicada en '{Topic}'. EventId={EventId} TraceId={TraceId}",
+                    "Cotización publicada en '{Topic}'. EventId={EventId} TraceId={TraceId}",
                     ResponseTopic,
                     responseEnvelope.Metadata.EventId,
                     responseEnvelope.Metadata.TraceId);
@@ -123,7 +123,7 @@ public sealed class InventoryKafkaWorker(
             catch (Exception ex)
             {
                 logger.LogError(ex,
-                    "Error procesando mensaje. Offset={Offset}",
+                    "Error procesando cotización. Offset={Offset}",
                     result?.Offset.Value.ToString() ?? "desconocido");
 
                 if (result is not null)
@@ -132,6 +132,6 @@ public sealed class InventoryKafkaWorker(
         }
 
         consumer.Close();
-        logger.LogInformation("InventoryKafkaWorker detenido.");
+        logger.LogInformation("OrderKafkaWorker detenido.");
     }
 }

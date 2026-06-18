@@ -14,7 +14,8 @@
       "PowerShell(cd \"c:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\"; dotnet build src/CentroP.Api/CentroP.Api.csproj --no-restore 2>&1 | Where-Object { $_ -match \"CS\\\\d{4}\" } | Select-Object -First 10)",
       "PowerShell(cd \"c:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\"; $output = dotnet build src/CentroP.Api/CentroP.Api.csproj --no-restore 2>&1; $output | Where-Object { $_ -match \"error\" } | Select-Object -Last 5)",
       "Bash(dotnet build *)",
-      "Bash(Select-String -Pattern \"error CS|warning CS|Error\\\\\\(s\\\\\\)|Warning\\\\\\(s\\\\\\)|Build succeeded\")"
+      "Bash(Select-String -Pattern \"error CS|warning CS|Error\\\\\\(s\\\\\\)|Warning\\\\\\(s\\\\\\)|Build succeeded\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\manub\\\\Desktop\\\\ProyectoPropio\\\\src\\\\CentroP.Api\\\\Common\\\\Messaging\")"
     ]
   }
 }

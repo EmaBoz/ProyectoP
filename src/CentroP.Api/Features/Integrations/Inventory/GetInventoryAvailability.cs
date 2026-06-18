@@ -1,10 +1,16 @@
 using CentroP.Api.Common.Interfaces;
+using CentroP.Api.Common.Messaging;
 using Dapper;
 using MediatR;
 
 namespace CentroP.Api.Features.Integrations.Inventory;
 
-// ── DTOs compartidos (Query + Worker) ─────────────────────────────────────────
+// ── Request payload (campo "data" del RequestEnvelope) ────────────────────────
+
+public sealed record InventoryRequestPayload(
+    string OrderNumber,
+    InventoryProviderDto Provider,
+    IReadOnlyList<InventoryItemRequestDto> Items);
 
 public sealed record InventoryProviderDto(string Name, string Branch, string Cufe);
 
@@ -17,12 +23,10 @@ public sealed record InventoryItemRequestDto(
 // ── Query ──────────────────────────────────────────────────────────────────────
 
 public sealed record GetInventoryAvailabilityQuery(
-    string OrderNumber,
-    InventoryProviderDto Provider,
-    IReadOnlyList<InventoryItemRequestDto> Items)
-    : IRequest<InventoryAvailabilityResultDto>;
+    RequestEnvelope<InventoryRequestPayload> Envelope)
+    : IRequest<ResponseEnvelope<InventoryAvailabilityResultDto>>;
 
-// ── DTOs de salida ─────────────────────────────────────────────────────────────
+// ── Response payload (campo "data" del ResponseEnvelope) ──────────────────────
 
 public sealed record InventoryItemResultDto(
     string TroquelCode,
@@ -39,20 +43,21 @@ public sealed record InventoryAvailabilityResultDto(
 // ── Handler ────────────────────────────────────────────────────────────────────
 
 public sealed class GetInventoryAvailabilityHandler(IDbConnectionFactory dbFactory)
-    : IRequestHandler<GetInventoryAvailabilityQuery, InventoryAvailabilityResultDto>
+    : IRequestHandler<GetInventoryAvailabilityQuery, ResponseEnvelope<InventoryAvailabilityResultDto>>
 {
-    public async Task<InventoryAvailabilityResultDto> Handle(
+    public async Task<ResponseEnvelope<InventoryAvailabilityResultDto>> Handle(
         GetInventoryAvailabilityQuery request, CancellationToken cancellationToken)
     {
-        if (!int.TryParse(request.Provider.Branch, out var idSucursal))
-            throw new ArgumentException(
-                $"El campo branch '{request.Provider.Branch}' no es un IdSucursal válido.");
+        var payload = request.Envelope.Data;
 
-        var barCodes = request.Items.Select(i => i.BarCode).Distinct().ToArray();
+        if (!int.TryParse(payload.Provider.Branch, out var idSucursal))
+            throw new ArgumentException(
+                $"El campo branch '{payload.Provider.Branch}' no es un IdSucursal válido.");
+
+        var barCodes = payload.Items.Select(i => i.BarCode).Distinct().ToArray();
 
         using var connection = await dbFactory.CreateAsync(cancellationToken);
 
-        // Misma lógica de JOIN que Scanner, adaptada para IN @BarCodes (evita N+1)
         const string sql = """
             SELECT
                 cb.CodigoBarra,
@@ -72,7 +77,7 @@ public sealed class GetInventoryAvailabilityHandler(IDbConnectionFactory dbFacto
             .GroupBy(r => r.CodigoBarra)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.StockActual));
 
-        var resultItems = request.Items
+        var resultItems = payload.Items
             .Select(item =>
             {
                 var stock = stockMap.GetValueOrDefault(item.BarCode, 0);
@@ -85,10 +90,17 @@ public sealed class GetInventoryAvailabilityHandler(IDbConnectionFactory dbFacto
             })
             .ToList();
 
-        return new InventoryAvailabilityResultDto(
-            request.OrderNumber,
-            request.Provider,
+        var data = new InventoryAvailabilityResultDto(
+            payload.OrderNumber,
+            payload.Provider,
             resultItems);
+
+        return new ResponseEnvelope<InventoryAvailabilityResultDto>(
+            Metadata: new EventMetadata(
+                EventId: Guid.NewGuid().ToString(),
+                TraceId: request.Envelope.Metadata.TraceId),
+            Reply: new EventReply(InReplyTo: request.Envelope.Metadata.EventId),
+            Data: data);
     }
 
     private sealed record StockRow(string CodigoBarra, int StockActual);

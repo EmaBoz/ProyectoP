@@ -3,6 +3,7 @@ using CentroP.Api.Common.Exceptions;
 using CentroP.Api.Common.Interfaces;
 using CentroP.Api.Features.Clientes;
 using CentroP.Api.Features.Integrations.Inventory;
+using CentroP.Api.Features.Integrations.Orders;
 using CentroP.Api.Features.Laboratorios;
 using CentroP.Api.Features.Provincias;
 using CentroP.Api.Features.Scanner;
@@ -60,6 +61,8 @@ try
     // ── Kafka (EDA) ───────────────────────────────────────────────────────────
     builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
     builder.Services.AddHostedService<InventoryKafkaWorker>();
+    builder.Services.Configure<OrderKafkaSettings>(builder.Configuration.GetSection("KafkaOrders"));
+    builder.Services.AddHostedService<OrderKafkaWorker>();
 
     // ── HybridCache ───────────────────────────────────────────────────────────
     builder.Services.AddHybridCache();
@@ -152,6 +155,7 @@ try
     app.MapLaboratoriosEndpoints();
     app.MapClientesEndpoints();
     app.MapInventoryEndpoints();
+    app.MapOrderEndpoints();
     app.MapStockEndpoints();
     app.MapScannerEndpoints();
 

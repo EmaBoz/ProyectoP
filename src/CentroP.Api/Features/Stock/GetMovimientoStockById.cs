@@ -92,7 +92,6 @@ public sealed class GetMovimientoStockByIdHandler(IDbConnectionFactory dbFactory
             lotes);
     }
 
-    // Intermediate record for Dapper mapping before lotes are available
     private sealed record MovimientoStockHeaderRow(
         int Id,
         int IdSucursal,
