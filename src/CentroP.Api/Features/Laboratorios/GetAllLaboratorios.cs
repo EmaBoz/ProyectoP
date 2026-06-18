@@ -1,7 +1,7 @@
+using CentroP.Api.Common.Interfaces;
 using CentroP.Api.Infrastructure.Cache;
-using CentroP.Api.Infrastructure.Data;
+using Dapper;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CentroP.Api.Features.Laboratorios;
@@ -10,7 +10,7 @@ public sealed record GetAllLaboratoriosQuery : IRequest<IReadOnlyList<Laboratori
 
 public sealed record LaboratorioDto(int Id, string Codigo, string Nombre, int? IdEmpresa);
 
-public sealed class GetAllLaboratoriosHandler(CentroPDbContext db, HybridCache cache)
+public sealed class GetAllLaboratoriosHandler(IDbConnectionFactory dbFactory, HybridCache cache)
     : IRequestHandler<GetAllLaboratoriosQuery, IReadOnlyList<LaboratorioDto>>
 {
     public async Task<IReadOnlyList<LaboratorioDto>> Handle(
@@ -18,10 +18,16 @@ public sealed class GetAllLaboratoriosHandler(CentroPDbContext db, HybridCache c
     {
         return await cache.GetOrCreateAsync(
             CacheKeys.LaboratoriosAll,
-            async ct => await db.Laboratorios
-                .OrderBy(l => l.Nombre)
-                .Select(l => new LaboratorioDto(l.Id, l.Codigo, l.Nombre, l.IdEmpresa))
-                .ToListAsync(ct),
+            async ct =>
+            {
+                using var connection = await dbFactory.CreateAsync(ct);
+                const string sql = """
+                    SELECT Id, Codigo, Nombre, IdEmpresa
+                    FROM cor_Laboratorio
+                    ORDER BY Nombre;
+                    """;
+                return (await connection.QueryAsync<LaboratorioDto>(sql)).ToList();
+            },
             new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) },
             cancellationToken: cancellationToken);
     }

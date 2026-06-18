@@ -1,15 +1,15 @@
 using CentroP.Api.Common.Exceptions;
+using CentroP.Api.Common.Interfaces;
 using CentroP.Api.Infrastructure.Cache;
-using CentroP.Api.Infrastructure.Data;
+using Dapper;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CentroP.Api.Features.Sucursales;
 
 public sealed record GetSucursalByIdQuery(int Id) : IRequest<SucursalDto>;
 
-public sealed class GetSucursalByIdHandler(CentroPDbContext db, HybridCache cache)
+public sealed class GetSucursalByIdHandler(IDbConnectionFactory dbFactory, HybridCache cache)
     : IRequestHandler<GetSucursalByIdQuery, SucursalDto>
 {
     public async Task<SucursalDto> Handle(
@@ -19,11 +19,13 @@ public sealed class GetSucursalByIdHandler(CentroPDbContext db, HybridCache cach
             CacheKeys.SucursalById(request.Id),
             async ct =>
             {
-                var entity = await db.Sucursales
-                    .Where(s => s.Id == request.Id)
-                    .Select(s => new SucursalDto(s.Id, s.Nombre, s.Telefono, s.IdEmpresa))
-                    .FirstOrDefaultAsync(ct);
-                return entity;
+                using var connection = await dbFactory.CreateAsync(ct);
+                const string sql = """
+                    SELECT Id, Nombre, Telefono, IdEmpresa
+                    FROM cor_Sucursal
+                    WHERE Id = @Id;
+                    """;
+                return await connection.QueryFirstOrDefaultAsync<SucursalDto>(sql, new { request.Id });
             },
             new HybridCacheEntryOptions { Expiration = TimeSpan.FromMinutes(15) },
             cancellationToken: cancellationToken);

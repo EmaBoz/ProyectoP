@@ -68,7 +68,9 @@ public sealed class GetInventoryAvailabilityHandler(IDbConnectionFactory dbFacto
         var rows = await connection.QueryAsync<StockRow>(
             sql, new { IdSucursal = idSucursal, BarCodes = barCodes });
 
-        var stockMap = rows.ToDictionary(r => r.CodigoBarra, r => r.StockActual);
+        var stockMap = rows
+            .GroupBy(r => r.CodigoBarra)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.StockActual));
 
         var resultItems = request.Items
             .Select(item =>

@@ -12,7 +12,6 @@ using FluentValidation;
 using CentroP.Api.Infrastructure.Data;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Serilog;
@@ -43,11 +42,6 @@ try
             retainedFileCountLimit: 30,
             outputTemplate:
                 "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj} {Properties}{NewLine}{Exception}"));
-
-    // ── EF Core ───────────────────────────────────────────────────────────────
-    builder.Services.AddDbContext<CentroPDbContext>(opts =>
-        opts.UseSqlServer(builder.Configuration.GetConnectionString("CentroP"))
-            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
     // ── MediatR + ValidationBehavior ─────────────────────────────────────────
     builder.Services.AddMediatR(cfg =>
@@ -157,6 +151,7 @@ try
     app.MapProvinciasEndpoints();
     app.MapLaboratoriosEndpoints();
     app.MapClientesEndpoints();
+    app.MapInventoryEndpoints();
     app.MapStockEndpoints();
     app.MapScannerEndpoints();
 
